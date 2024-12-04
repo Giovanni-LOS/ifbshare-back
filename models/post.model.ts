@@ -18,6 +18,6 @@ const postSchema = new mongoose.Schema({
     timestamps: true
 });
 
-const Post = mongoose.model('Post', postSchema);
+export type User = mongoose.InferSchemaType<typeof postSchema>;
 
-export default Post;
+export default mongoose.model('Post', postSchema);

@@ -1,5 +1,5 @@
 import Post from "../models/post.model.js";
-import {asyncWrapper} from "../middlewares/asyncWrapper.js";
+import {asyncWrapper} from "../middlewares/asyncWrapper.middleware.js";
 import path from "path";
 import fs from "fs";
 
