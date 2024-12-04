@@ -84,28 +84,19 @@ export const login: RequestHandler<{}, {}, loginBody> = async (req, res, next) =
 }
 
 export const logout: RequestHandler = async (req, res, next) => {
-    const userId = req?.userId
+    res.clearCookie('authToken', {
+        httpOnly: true,
+        sameSite: "strict", 
+        secure: true   
+    });
 
-    const user = await userModel.findOne({ userId })
-
-    if (user) {
-        res.clearCookie('authToken', {
-            httpOnly: true,
-            sameSite: "strict", 
-            secure: true   
-        });
-
-        res.status(201).json({ success: true , message: "You have successfully loggout." })
-    } 
-    else {
-        throw new HttpError("Invalid credentials", 400)
-    }
+    res.status(201).json({ success: true , message: "You have successfully loggout." })
 }
 
 export const getMe: RequestHandler = async (req, res, next) => {
     const userId = req?.userId
 
-    const user = await userModel.findOne({ userId }).select("-password");
+    const user = await userModel.findOne({ _id: userId }).select("-password");
 
     if (user) { 
         res.status(201).json({ success: true , data: user })
@@ -119,22 +110,15 @@ export const updateMe: RequestHandler = async (req, res, next) => {
     const {  password, nickname } = req.body
     const userId = req?.userId
 
-    if( !password || !nickname) {
+    if(!nickname) {
         throw new HttpError("Please add all fields!", 400)
-    }
-    else if(!validatePassword(password)) {
-        throw new HttpError("Weak Password!", 400);
     }
     else if(await userModel.findOne({ nickname })) {
         throw new HttpError("Nickname already exists!", 400)
     }
 
-    const salt = await bcrypt.genSalt()
-    const hashedPassword = await bcrypt.hash(password, salt)
-
     const newUser = new userModel({
-        nickname,
-        password: hashedPassword
+        nickname
     })
 
     const user = await userModel.findById(userId)

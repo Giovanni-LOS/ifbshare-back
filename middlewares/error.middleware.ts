@@ -7,6 +7,7 @@ export const errorMidddleware = (
     res: Response,
     next: NextFunction
 ): void => {
+    console.log(err.stack)
 
     let statusCode = 500
     let message = "Server Error"

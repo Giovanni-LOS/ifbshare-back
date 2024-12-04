@@ -10,10 +10,14 @@ const postSchema = new mongoose.Schema({
     content: {
         type: String
     },
-    file: {
-        type: String,
-        required: true
-    }
+    author: {
+        type: mongoose.Schema.Types.ObjectId,
+        require: true,
+        ref: 'user'
+    },
+    subject: {
+        type: String
+    },
 }, {
     timestamps: true
 });

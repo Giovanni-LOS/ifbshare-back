@@ -1,6 +1,7 @@
 import validator from 'validator';
+import { ENV } from '../config/env';
 
-export const validateEmail = (email: string): boolean => validator.isEmail(email) && email.endsWith("ifb.edu.br");;
+export const validateEmail = (email: string): boolean => validator.isEmail(email) && email.endsWith(ENV.IFB_DOMAIN);;
 
 export const validatePassword = (password: string): boolean => 
     validator.isStrongPassword(password, {

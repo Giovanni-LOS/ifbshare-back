@@ -14,5 +14,4 @@ router.delete("/me", authenticate, deleteMe)
 //router.post("/password/forgot", forgoutPassword)
 //router.post("/password/reset", resetPassword)
 
-
 export default router
