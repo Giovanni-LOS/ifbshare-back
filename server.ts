@@ -1,12 +1,13 @@
 import "express-async-errors";
 import express from "express";
-import { connectDB } from "./config/db.js"
-import postRouter from "./routes/post.route.js";
-import authRouter from "./routes/auth.route.js"
+import { connectDB } from "./config/db"
+import postRouter from "./routes/post.route";
+import authRouter from "./routes/auth.route";
+import fileRouter from "./routes/file.route";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { ENV } from "./config/env.js";
-import { errorMidddleware } from "./middlewares/error.middleware.js";
+import { errorMidddleware } from "./middlewares/error.middleware";
 
 const PORT = ENV.PORT;
 
@@ -23,6 +24,8 @@ app.use(cookieParser());
 app.use("/api/auth", authRouter);
 
 app.use("/api/posts", postRouter);
+
+app.use("/api/files", fileRouter);
 
 // @ts-ignore
 app.use(errorMidddleware);

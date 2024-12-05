@@ -10,7 +10,6 @@ interface HeaderId {
 }
 
 export const getPosts: RequestHandler = async (req, res) => {
-
     const posts = await postModel.find();
 
     if (!posts) {
@@ -46,7 +45,6 @@ export const createPost: RequestHandler = async (req, res) => {
             size: file.size,
             postId: post._id
         }));
-    
         const fileData = await Promise.all(fileDataPromises);
         const fileUpload = await fileModel.insertMany(fileData);
 

@@ -1,30 +1,30 @@
-import mongoose, { InferSchemaType } from "mongoose";
+import mongoose from "mongoose";
 
 const fileSchema = new mongoose.Schema({
     name: {
         type: String,
-        require: true
+        required: true
     },
     contentType: {
         type: String,
-        require: true
+        required: true
     },
     size: {
         type: String,
-        require: true
+        required: true
     },
     postId: {
         type: mongoose.Schema.Types.ObjectId,
-        require: true
+        required: true
     },
     data: {
         type: Buffer,
-        require: true
+        required: true
     }
 }, {
     timestamps: true
 })
 
-export type File = InferSchemaType<typeof fileSchema>
+export type File = mongoose.InferSchemaType<typeof fileSchema>
 
 export default mongoose.model("file", fileSchema)
