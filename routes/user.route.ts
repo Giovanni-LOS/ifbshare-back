@@ -7,8 +7,8 @@ const router = express.Router();
 
 router.use(authenticate);
 
-router.get("/:userId", getUserById);
-router.get("/:nickname", getUserByNickname);
+router.get("profile/:userId", getUserById);
+router.get("profile/:nickname", getUserByNickname);
 router.get("/:userId/posts", getUserPostsById);
 router.get("/:nickname/posts", getUserPostsByNickname);
 
