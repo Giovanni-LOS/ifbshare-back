@@ -1,9 +1,10 @@
 import { RequestHandler } from "express";
 import { HttpError } from "../utils/httpError";
-import bcrypt from "bcryptjs"
+import crypto from "crypto";
 import { generateJWT } from "../utils/generateToken";
 import { validateEmail, validatePassword } from "../utils/validators";
 import userModel from "../models/user.model";
+import verifyTokenModel from "../models/verifyToken.model";
 
 
 interface registerBody {
@@ -142,5 +143,49 @@ export const deleteMe: RequestHandler = async (req, res, next) => {
     }
 
     res.status(200).send({ success: true, message: "User deleted successfully" });
+}
 
+interface RequestPasswordBody {
+    email: string;
+}
+export const requestPassword: RequestHandler<{}, {}, RequestPasswordBody> = async (req, res) {
+    const { email } = req.body;
+
+    if(!email) {
+        throw new HttpError("Please add email", 400);
+    }
+    else if(!validateEmail(email)) {
+        throw new HttpError("Invalid email", 400);
+    }
+    const user = await userModel.findOne({ email });
+
+    if(!user) {
+        throw new HttpError("User not found", 404);
+    }
+
+    const tokenToVerifies = await verifyTokenModel.findOne({ email, verified: false });
+
+    if(tokenToVerifies) {
+       const deletedToken = await verifyTokenModel.findByIdAndDelete(tokenToVerifies._id);
+    }
+
+    const newToken= await verifyTokenModel.create({
+        email: user.email,
+        verified: false,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000)
+    });
+
+    if(!newToken) {
+        throw new HttpError("Token not created", 500);
+    }
+    const token = generateJWT(newToken._id);
+
+    res.cookie('resetToken', token, {
+        httpOnly: true,
+        sameSite: "strict",
+        maxAge: 10 * 60 * 1000,
+        secure: true
+    });
+
+    res.status(201).json({ success: true, message: "Token created successfully" });
 }

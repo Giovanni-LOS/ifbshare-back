@@ -11,7 +11,10 @@ router.get("/logout", authenticate, logout)
 router.get("/me", authenticate, getMe)
 router.put("/me", authenticate, updateMe)
 router.delete("/me", authenticate, deleteMe)
-//router.post("/password/forgot", forgoutPassword)
+//router.get("/email/verify/:email/:code", verifyEmail)
+//router.post("/password/request", requestPassword)
+//router.get("/password/check-request", checkRequestPassword)
+//router.get("/password/verify/:email/:code", verifyRequestPassword)
 //router.post("/password/reset", resetPassword)
 
 export default router
