@@ -3,7 +3,7 @@ import multer, { FileFilterCallback } from 'multer';
 
 const storage = multer.memoryStorage();
 
-const fileFilter = (req: Request,file: Express.Multer.File, cb: FileFilterCallback): void => {
+const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback): void => {
     // Reject a file if it's not a jpg, png, or pdf
     if (
         file.mimetype === "image/jpeg" ||
