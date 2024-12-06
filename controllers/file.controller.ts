@@ -75,7 +75,7 @@ export const postFile: RequestHandler = async (req: PostFileHeader, res) => {
         throw new HttpError("Post not found", 404);
     }
     else if(post.author?.toString() !== userId) {
-        throw new HttpError("Not authorized to add files to this post", 401);
+        throw new HttpError("Not authorized to add files to this post", 403);
     }
     
     const fileDataPromises = files.map(async (file) => ({
@@ -119,7 +119,7 @@ export const deleteFile: RequestHandler<deleteFileHeader> = async (req, res) => 
         throw new HttpError("Post not found", 404);
     }
     else if(post.author?.toString() !== userId) {
-        throw new HttpError("Not authorized to delete files from this post", 401);
+        throw new HttpError("Not authorized to delete files from this post", 403);
     }
 
     const deletedFile = await fileModel.findByIdAndDelete(id);

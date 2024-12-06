@@ -15,9 +15,9 @@ const postSchema = new mongoose.Schema({
         required: true,
         ref: 'user'
     },
-    subject: {
+    tags: [{
         type: String
-    },
+    }],
 }, {
     timestamps: true
 });

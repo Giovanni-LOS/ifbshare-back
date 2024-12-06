@@ -106,10 +106,6 @@ export const getMe: RequestHandler = async (req, res, next) => {
     }
 }
 
-interface updateMeBody {
-    nickname: string;
-}
-
 export const updateMe: RequestHandler = async (req, res, next) => {
     const { nickname } = req.body
     const userId = req?.userId

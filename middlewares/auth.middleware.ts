@@ -20,13 +20,13 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
         const decoded = jwt.verify(authToken, ENV.JWT_SECRET!) as DecodedToken
 
         req.userId = decoded.id
-        
+
         next()
     } catch (error) {
         if (error instanceof TokenExpiredError) {
             return next(new HttpError("Token expired", 401));
         }
 
-        next(new HttpError("Not authorized, invalid token", 403))
+        next(new HttpError("Not authorized, invalid token", 401))
     }
 }

@@ -19,8 +19,14 @@ export const getPosts: RequestHandler = async (req, res) => {
     res.status(200).send({ success: true, data: posts, message: "Posts fetched successfully" });
 }
 
-export const createPost: RequestHandler = async (req, res) => {
-    const { title, content, subject } = req.body;
+interface CreatePostBody {
+    title: string;
+    content: string;
+    tags: string[];
+}
+
+export const createPost: RequestHandler<{}, {}, CreatePostBody> = async (req, res) => {
+    const { title, content, tags } = req.body;
     const author = req?.userId;
     const files: Express.Multer.File[] = req.files as Express.Multer.File[];
 
@@ -31,7 +37,7 @@ export const createPost: RequestHandler = async (req, res) => {
         throw new HttpError("Post must have a Title", 400)
     }
 
-    const post = await postModel.create({ title, content, subject, author });
+    const post = await postModel.create({ title, content, tags, author });
 
     if(!post) {
         throw new HttpError("Error creating post", 500)
@@ -68,7 +74,7 @@ export const deletePost: RequestHandler<HeaderId> = async (req, res) => {
     }
 
     if(post.author?.toString() !== userId) {
-        throw new HttpError("Not authorized to delete this post", 401);
+        throw new HttpError("Not authorized to delete this post", 403);
     }
 
     const filesDeleted = await fileModel.deleteMany({ postId: post._id });
@@ -78,9 +84,15 @@ export const deletePost: RequestHandler<HeaderId> = async (req, res) => {
     res.status(200).send({ success: true, message: "Post deleted successfully", data: postDeleted });
 }
 
-export const updatePost: RequestHandler<HeaderId> = async (req, res) => {
+interface UpdatePostBody {
+    title: string;
+    content?: string;
+    tags?: string[];
+}
+
+export const updatePost: RequestHandler<HeaderId, {}, UpdatePostBody> = async (req, res) => {
     const { id } = req.params;
-    const { title, content, subject } = req.body;
+    const { title, content, tags } = req.body;
     const author = req?.userId;
 
     if(!mongoose.isValidObjectId(id)) {
@@ -98,10 +110,10 @@ export const updatePost: RequestHandler<HeaderId> = async (req, res) => {
     }
 
     if(post.author?.toString() !== author) {
-        throw new HttpError("Not authorized to delete this post", 401);
+        throw new HttpError("Not authorized to delete this post", 403);
     }
 
-    const updatedPost = await postModel.findByIdAndUpdate( id, { title, content, subject }, { new: true });
+    const updatedPost = await postModel.findByIdAndUpdate( id, { title, content, tags }, { new: true });
 
     if(!updatePost) {
         throw new HttpError("Error updating post", 500)
