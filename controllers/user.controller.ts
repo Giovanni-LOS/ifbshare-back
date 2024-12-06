@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import postModel from "../models/post.model";
 import { HttpError } from "../utils/httpError";
 import userModel from "../models/user.model";
+import mongoose from "mongoose";
 
 interface HeaderId {
     userId: string;
@@ -13,6 +14,10 @@ interface HeaderNickname {
 
 export const getUserById: RequestHandler<HeaderId> = async (req, res, next) => {
     const { userId } = req.params;
+
+    if(!mongoose.isValidObjectId(userId)) {
+        throw new HttpError("Invalid user id", 400);
+    }
 
     const user = await userModel.findOne({ _id: userId }).select("-password -email");
 
@@ -39,7 +44,17 @@ export const getUserByNickname: RequestHandler<HeaderNickname> = async (req, res
 export const getUserPostsById: RequestHandler<HeaderId> = async (req, res) => {
     const { userId } = req.params;
 
-    const posts = await postModel.find({ author: userId });
+    if(!mongoose.isValidObjectId(userId)) {
+        throw new HttpError("Invalid user id", 400);
+    }
+
+    const user = await userModel.findOne({ _id: userId });
+
+    if (!user) {
+        throw new HttpError("User not found", 404);
+    }
+
+    const posts = await postModel.find({ author: user._id });
 
     if (!posts) {
         throw new HttpError("Posts not found", 404);
