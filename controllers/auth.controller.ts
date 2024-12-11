@@ -1,10 +1,12 @@
 import { RequestHandler } from "express";
 import { HttpError } from "../utils/httpError";
-import crypto from "crypto";
+import bcrypt from "bcryptjs";
 import { generateJWT } from "../utils/generateToken";
 import { validateEmail, validatePassword } from "../utils/validators";
 import userModel from "../models/user.model";
-import verifyTokenModel from "../models/verifyToken.model";
+import verifyTokenModel, { VerifyTokenType } from "../models/verifyToken.model";
+import { sendEmail } from "../utils/sendEmail";
+import { renderEmail } from "../utils/renderEmail";
 
 
 interface registerBody {
@@ -14,7 +16,7 @@ interface registerBody {
     password: string;
 }
 
-export const register: RequestHandler<{}, {}, registerBody> = async (req, res, next) => {
+export const register: RequestHandler<{}, {}, registerBody> = async (req, res) => {
     const { email, password, nickname } = req.body
 
     if(!email || !password || !nickname) {
@@ -42,18 +44,31 @@ export const register: RequestHandler<{}, {}, registerBody> = async (req, res, n
         password: hashedPassword
     })
 
-    const user = await newUser.save()
-
-    const token = generateJWT(user._id); 
-
-    res.cookie('authToken', token, {
-        httpOnly: true,
-        sameSite: "strict",
-        maxAge: 24 * 60 * 60 * 1000,
-        secure: true
+    const newToken = await verifyTokenModel.create({
+        email,
+        expiresAt: new Date(Date.now() + (60 * 24 * 365) * 60 * 1000),
+        type: VerifyTokenType.EMAIL
     });
 
-    res.status(201).json({ success: true, message: "Account created successfully!"})
+    if(!newToken) {
+        throw new HttpError("Verification token not created", 500);
+    }
+
+    const user = await newUser.save();
+
+    sendEmail(
+        user.email, 
+        "IFBShare: Confirm your account", 
+        await renderEmail(
+            "confirm-account-email", 
+            {
+                link: `${req.protocol}://${req.get('host')}/api/auth/email/verify?token=${newToken._id}&expire=${newToken.expiresAt.getTime()}`, 
+                nickname: user.nickname
+            }
+        )
+    );
+
+    res.status(201).json({ success: true, message: "Your account has been successfully created! Please check your email to verify your account." })
 }
 
 interface loginBody {
@@ -61,12 +76,16 @@ interface loginBody {
     password: string;
 }
 
-export const login: RequestHandler<{}, {}, loginBody> = async (req, res, next) => {
+export const login: RequestHandler<{}, {}, loginBody> = async (req, res) => {
     const { email, password } = req.body 
 
     const user = await userModel.findOne({ email })
 
     if (user && (await bcrypt.compare(password, user.password))) {
+        if (!user.verified) {
+            throw new HttpError("Verifie yout account", 400);
+        }
+
         const token = generateJWT(user._id); 
 
         res.cookie('authToken', token, {
@@ -84,7 +103,7 @@ export const login: RequestHandler<{}, {}, loginBody> = async (req, res, next) =
     }
 }
 
-export const logout: RequestHandler = async (req, res, next) => {
+export const logout: RequestHandler = async (_req, res) => {
     res.clearCookie('authToken', {
         httpOnly: true,
         sameSite: "strict", 
@@ -94,7 +113,7 @@ export const logout: RequestHandler = async (req, res, next) => {
     res.status(201).json({ success: true , message: "You have successfully loggout." })
 }
 
-export const getMe: RequestHandler = async (req, res, next) => {
+export const getMe: RequestHandler = async (req, res) => {
     const userId = req?.userId
 
     const user = await userModel.findOne({ _id: userId }).select("-password");
@@ -107,7 +126,7 @@ export const getMe: RequestHandler = async (req, res, next) => {
     }
 }
 
-export const updateMe: RequestHandler = async (req, res, next) => {
+export const updateMe: RequestHandler = async (req, res) => {
     const { nickname } = req.body
     const userId = req?.userId
 
@@ -133,7 +152,7 @@ export const updateMe: RequestHandler = async (req, res, next) => {
     res.status(201).json({ success: true, message: "User updated successfully!", data: updatedUser })
 }
 
-export const deleteMe: RequestHandler = async (req, res, next) => {
+export const deleteMe: RequestHandler = async (req, res) => {
     const userId = req?.userId;
 
     const deletedUser = await userModel.findByIdAndDelete(userId);
@@ -148,7 +167,7 @@ export const deleteMe: RequestHandler = async (req, res, next) => {
 interface RequestPasswordBody {
     email: string;
 }
-export const requestPassword: RequestHandler<{}, {}, RequestPasswordBody> = async (req, res) {
+export const requestPassword: RequestHandler<{}, {}, RequestPasswordBody> = async (req, res) => {
     const { email } = req.body;
 
     if(!email) {
@@ -157,35 +176,132 @@ export const requestPassword: RequestHandler<{}, {}, RequestPasswordBody> = asyn
     else if(!validateEmail(email)) {
         throw new HttpError("Invalid email", 400);
     }
+
     const user = await userModel.findOne({ email });
+
+    if(user) {
+        const tokenToVerifies = await verifyTokenModel.findOne({ email: user.email, verified: false });
+
+        if(tokenToVerifies) {
+            await verifyTokenModel.findByIdAndDelete(tokenToVerifies._id);
+        }
+
+        const newToken = await verifyTokenModel.create({
+            email: user.email,
+            verified: false,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+            type: VerifyTokenType.PASSWORD_RESET
+        });
+
+        if(!newToken) {
+            throw new HttpError("Token not created", 500);
+        }
+
+        sendEmail(
+            user.email, 
+            "IFBShare: Reset your password", 
+            await renderEmail(
+                "reset-password-email", 
+                {
+                    link: `${req.protocol}://${req.get('host')}/api/auth/password/verify?token=${newToken._id}&expire=${newToken.expiresAt.getTime()}`, 
+                    nickname: user.nickname
+                }
+            )
+        );
+    }
+
+    res.status(201).json({ success: true, message: "We sent you instructions to reset your password." });
+}
+
+interface ResetPasswordBody {
+    token: string;
+    password: string;
+}
+
+export const resetPassword: RequestHandler<{}, {}, ResetPasswordBody> = async (req, res) => {
+    const { token , password } = req.body;
+
+    if(!token) {
+        throw new HttpError("Token is necessary", 400);
+    }
+    else if(!password) {
+        throw new HttpError("Please add a password", 400);
+    }
+    else if(!validatePassword(password)) {
+        throw new HttpError("Weak Password", 400);
+    }
+
+    const verifyToken = await verifyTokenModel.findById(token);
+
+    if(!verifyToken) {
+        throw new HttpError("Token expired, please request a new one!", 404);
+    }
+
+    if(verifyToken.type !== VerifyTokenType.PASSWORD_RESET) {
+        throw new HttpError("Token not valid", 400);
+    }
+
+    const user = await userModel.findOne({ email: verifyToken.email });
 
     if(!user) {
         throw new HttpError("User not found", 404);
     }
 
-    const tokenToVerifies = await verifyTokenModel.findOne({ email, verified: false });
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    if(tokenToVerifies) {
-       const deletedToken = await verifyTokenModel.findByIdAndDelete(tokenToVerifies._id);
+    const updatedUser = await userModel.findByIdAndUpdate(
+        user._id, 
+        { password: hashedPassword }
+    );
+
+    if(!updatedUser) {
+        throw new HttpError("Failed to update user", 500);
     }
 
-    const newToken= await verifyTokenModel.create({
-        email: user.email,
-        verified: false,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000)
-    });
+    await verifyTokenModel.findByIdAndDelete(verifyToken._id);
 
-    if(!newToken) {
-        throw new HttpError("Token not created", 500);
+    res.status(200).json({ success: true, message: "User updated successfully" });
+}
+
+
+interface verifyEmailBody {
+    token: string;
+}
+
+export const verifyEmail: RequestHandler<{}, {}, verifyEmailBody> = async (req, res) => {
+    const { token } = req.body;
+
+    if(!token) {
+        throw new HttpError("Token is necessary", 400);
     }
-    const token = generateJWT(newToken._id);
 
-    res.cookie('resetToken', token, {
-        httpOnly: true,
-        sameSite: "strict",
-        maxAge: 10 * 60 * 1000,
-        secure: true
-    });
+    const verifyToken = await verifyTokenModel.findById(token);
 
-    res.status(201).json({ success: true, message: "Token created successfully" });
+    if(!verifyToken) {
+        throw new HttpError("Token expired, please create a new account!", 404);
+    }
+
+    if(verifyToken.type !== VerifyTokenType.EMAIL) {
+        throw new HttpError("Token not valid", 400);
+    }
+
+    const user = await userModel.findOne({ email: verifyToken.email });
+
+    if(!user) {
+        throw new HttpError("User not found", 404);
+    }
+
+    const updatedUser = await userModel.findByIdAndUpdate(
+        user._id, 
+        { verified: true }
+    );
+
+    if(!updatedUser) {
+        throw new HttpError("Failed to verifi user", 500);
+    }
+
+    await verifyTokenModel.findByIdAndDelete(verifyToken._id);
+
+    res.status(200).json({ success: true, message: "User verified successfully" });
 }

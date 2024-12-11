@@ -1,4 +1,4 @@
-import { Request, RequestHandler, Response } from "express"
+import { Request, RequestHandler } from "express"
 import fileModel from "../models/file.model"
 import { HttpError } from "../utils/httpError";
 import mongoose from "mongoose";

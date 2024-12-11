@@ -1,10 +1,11 @@
 import mongoose from "mongoose";
 
+export enum VerifyTokenType {
+    EMAIL = "email",
+    PASSWORD_RESET = "password_reset",
+}
+
 const verifyTokenSchema = new mongoose.Schema({
-    token: {
-        type: String,
-        required: true
-    },
     email: {
         type: String,
         required: true
@@ -13,11 +14,10 @@ const verifyTokenSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
-    verified: {
-        type: Boolean,
-        required: true,
-        default: false
-    }
+    type: {
+        enum: Object.values(VerifyTokenType),
+        required: true
+    } as unknown as VerifyTokenType
 }, {
     timestamps: true
 });

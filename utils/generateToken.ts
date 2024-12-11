@@ -1,8 +1,8 @@
 import jwt from "jsonwebtoken"
 import { ENV } from "../config/env"
 
-export const generateJWT = (id: string | object | Buffer) => {
+export const generateJWT = (id: string | object | Buffer, expiresIn?: string | number | undefined ) => {
     return jwt.sign({ id }, ENV.JWT_SECRET, {
-        expiresIn: '1d'
+        expiresIn: expiresIn ?? '1d'
     })
 }
