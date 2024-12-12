@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 
+export enum UserDegreeType {
+    CS = "Computer Science",
+    PHYSICS = "Physics"
+}
+
 const userSchema = new mongoose.Schema({
     nickname: {
         type: String,
@@ -19,7 +24,13 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         required: true,
         default: false
-    }
+    },
+    picture: {
+        type: Buffer,
+    },
+    degree: {
+        enum: Object.values(UserDegreeType)
+    } as unknown as UserDegreeType
 }, {
     timestamps: true
 });

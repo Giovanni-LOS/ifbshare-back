@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import postModel from "../models/post.model";
 import { HttpError } from "../utils/httpError";
-import userModel from "../models/user.model";
+import userModel, { UserDegreeType } from "../models/user.model";
 import mongoose from "mongoose";
 
 interface HeaderId {
@@ -79,4 +79,48 @@ export const getUserPostsByNickname: RequestHandler<HeaderNickname> = async (req
     }
 
     res.status(200).send({ success: true, data: posts, message: "Posts fetched successfully" });
+}
+
+interface UpdateMeBody {
+    nickname: string;
+    degree: UserDegreeType;
+}
+
+export const updateMe: RequestHandler<{}, {}, UpdateMeBody> = async (req, res) => {
+    const { nickname, degree } = req.body
+    const userId = req?.userId
+    const file: Express.Multer.File = req.file as Express.Multer.File
+
+    if(!nickname) {
+        throw new HttpError("Please add all fields!", 400)
+    }
+    else if(await userModel.findOne({ nickname })) {
+        throw new HttpError("Nickname already exists!", 400)
+    }
+    else if (!Object.values(UserDegreeType).includes(degree)) {
+        throw new HttpError("Degree not valid", 400);
+    }
+
+    const user = await userModel.findById(userId)
+
+    if (!user) {
+        throw new HttpError("user not found", 404)
+    }
+
+    const updatedUser = await userModel.findByIdAndUpdate(userId, { nickname, degree, file }, { new: true }).select("-password")
+
+    res.status(201).json({ success: true, message: "User updated successfully!", data: updatedUser })
+}
+
+export const getMe: RequestHandler = async (req, res) => {
+    const userId = req?.userId
+
+    const user = await userModel.findOne({ _id: userId }).select("-password");
+
+    if (user) { 
+        res.status(201).json({ success: true , data: user })
+    }
+    else {
+        throw new HttpError("Invalid credentials", 400)
+    }
 }

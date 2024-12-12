@@ -24,3 +24,27 @@ export const upload = multer({
     },
     fileFilter: fileFilter,
 });
+
+const pictureFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback): void => {
+    // Reject a file if it's not a jpg, png
+    if (
+        file.mimetype === "image/jpeg" ||
+        file.mimetype === "image/jpg" ||
+        file.mimetype === "image/png"
+    ) {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+};
+
+export const uploadPicture = multer({
+    storage: storage,
+    limits: {
+        fileSize: 1024 * 1024 * 1, // 1 MB
+    },
+    fileFilter: pictureFilter,
+});
+
+
+

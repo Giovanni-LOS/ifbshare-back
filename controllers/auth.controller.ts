@@ -113,45 +113,6 @@ export const logout: RequestHandler = async (_req, res) => {
     res.status(201).json({ success: true , message: "You have successfully loggout." })
 }
 
-export const getMe: RequestHandler = async (req, res) => {
-    const userId = req?.userId
-
-    const user = await userModel.findOne({ _id: userId }).select("-password");
-
-    if (user) { 
-        res.status(201).json({ success: true , data: user })
-    }
-    else {
-        throw new HttpError("Invalid credentials", 400)
-    }
-}
-
-export const updateMe: RequestHandler = async (req, res) => {
-    const { nickname } = req.body
-    const userId = req?.userId
-
-    if(!nickname) {
-        throw new HttpError("Please add all fields!", 400)
-    }
-    else if(await userModel.findOne({ nickname })) {
-        throw new HttpError("Nickname already exists!", 400)
-    }
-
-    const newUser = new userModel({
-        nickname
-    })
-
-    const user = await userModel.findById(userId)
-
-    if (!user) {
-        throw new HttpError("user not found", 404)
-    }
-
-    const updatedUser = await userModel.findByIdAndUpdate(userId, newUser, { new: true })
-
-    res.status(201).json({ success: true, message: "User updated successfully!", data: updatedUser })
-}
-
 export const deleteMe: RequestHandler = async (req, res) => {
     const userId = req?.userId;
 

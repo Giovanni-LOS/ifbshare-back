@@ -1,7 +1,7 @@
 {
   "name": "ifbshare-back",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.ts",
   "type": "module",
   "scripts": {
     "server": "npx tsx --watch server.ts",
@@ -10,7 +10,7 @@
     "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "keywords": [],
-  "author": "",
+  "authors": ["gabrielcesar-dev", "Giovanni-LOS"],
   "license": "ISC",
   "description": "Ifb Share project",
   "dependencies": {
@@ -22,7 +22,6 @@
     "envalid": "^8.0.0",
     "express": "^4.21.1",
     "express-async-errors": "^3.1.1",
-    "gridfs-stream": "^1.1.1",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.10.0",
     "mongoose": "^8.8.4",
