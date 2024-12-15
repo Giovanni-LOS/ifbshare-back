@@ -15,6 +15,7 @@ const verifyTokenSchema = new mongoose.Schema({
         required: true
     },
     type: {
+        type: String,
         enum: Object.values(VerifyTokenType),
         required: true
     } as unknown as VerifyTokenType

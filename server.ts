@@ -9,10 +9,12 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { ENV } from "./config/env.js";
 import { errorMidddleware } from "./middlewares/error.middleware";
+import setupSwagger from './config/swagger.ts';
 
 const PORT = ENV.PORT;
 
 const app = express();
+setupSwagger(app);
 
 app.use(cors());
 
@@ -36,4 +38,5 @@ app.use(errorMidddleware);
 app.listen(PORT, async () => {
     await connectDB();
     console.log("Server started at http://localhost:" + PORT);
+
 });
