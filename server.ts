@@ -8,8 +8,9 @@ import userRouter from "./routes/user.route";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { ENV } from "./config/env.js";
-import { errorMidddleware } from "./middlewares/error.middleware";
+import { errorMiddleware } from "./middlewares/error.middleware";
 import setupSwagger from './config/swagger.ts';
+import morgan from "morgan";
 
 const PORT = ENV.PORT;
 
@@ -24,6 +25,8 @@ app.use(express.urlencoded({ extended: false }))
 
 app.use(cookieParser());
 
+app.use(morgan("dev"));
+
 app.use("/api/auth", authRouter);
 
 app.use("/api/posts", postRouter);
@@ -33,7 +36,7 @@ app.use("/api/files", fileRouter);
 app.use("/api/users", userRouter);
 
 // @ts-ignore
-app.use(errorMidddleware);
+app.use(errorMiddleware);
 
 app.listen(PORT, async () => {
     await connectDB();
