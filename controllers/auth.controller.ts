@@ -7,6 +7,7 @@ import userModel from "../models/user.model";
 import verifyTokenModel, { VerifyTokenType } from "../models/verifyToken.model";
 import { sendEmail } from "../utils/sendEmail";
 import { renderEmail } from "../utils/renderEmail";
+import { ENV } from "../config/env";
 
 
 interface registerBody {
@@ -57,15 +58,14 @@ export const register: RequestHandler<{}, {}, registerBody> = async (req, res) =
     const user = await newUser.save();
 
     sendEmail(
-        user.email, 
-        "IFBShare: Confirm your account", 
-        await renderEmail(
-            "confirm-account-email", 
-            {
-                link: `${req.protocol}://${req.get('host')}/api/auth/email/verify?token=${newToken._id}&expire=${newToken.expiresAt.getTime()}`, 
-                nickname: user.nickname
-            }
-        )
+      user.email,
+      "IFBShare: Confirm your account",
+      await renderEmail("confirm-account-email", {
+        link: `${ENV.CLIENT_DOMAIN}/verify-email?token=${
+          newToken._id
+        }&expire=${newToken.expiresAt.getTime()}`,
+        nickname: user.nickname,
+      })
     );
 
     res.status(201).json({ success: true, message: "Your account has been successfully created! Please check your email to verify your account." })
@@ -95,7 +95,7 @@ export const login: RequestHandler<{}, {}, loginBody> = async (req, res) => {
             secure: true
         });
 
-        res.status(201).json({ success: true , message: "You have successfully logged in."})
+        res.status(201).json({ success: true , message: "You have successfully logged in." })
 
     } 
     else {
@@ -110,7 +110,7 @@ export const logout: RequestHandler = async (_req, res) => {
         secure: true   
     });
 
-    res.status(201).json({ success: true , message: "You have successfully loggout." })
+    res.status(201).json({ success: true , message: "You have successfully logout." })
 }
 
 export const deleteMe: RequestHandler = async (req, res) => {
@@ -159,15 +159,14 @@ export const requestPassword: RequestHandler<{}, {}, RequestPasswordBody> = asyn
         }
 
         sendEmail(
-            user.email, 
-            "IFBShare: Reset your password", 
-            await renderEmail(
-                "reset-password-email", 
-                {
-                    link: `${req.protocol}://${req.get('host')}/api/auth/password/verify?token=${newToken._id}&expire=${newToken.expiresAt.getTime()}`, 
-                    nickname: user.nickname
-                }
-            )
+          user.email,
+          "IFBShare: Reset your password",
+          await renderEmail("reset-password-email", {
+            link: `${ENV.CLIENT_DOMAIN}/reset-password?token=${
+              newToken._id
+            }&expire=${newToken.expiresAt.getTime()}`,
+            nickname: user.nickname,
+          })
         );
     }
 
@@ -177,16 +176,20 @@ export const requestPassword: RequestHandler<{}, {}, RequestPasswordBody> = asyn
 interface ResetPasswordBody {
     token: string;
     password: string;
+    confirmPassword: string;
 }
 
 export const resetPassword: RequestHandler<{}, {}, ResetPasswordBody> = async (req, res) => {
-    const { token , password } = req.body;
+    const { token , password, confirmPassword } = req.body;
 
     if(!token) {
         throw new HttpError("Token is necessary", 400);
     }
-    else if(!password) {
+    else if(!password || !confirmPassword) {
         throw new HttpError("Please add a password", 400);
+    }
+    else if (password !== confirmPassword) {
+        throw new HttpError("Passwords do not match", 400);
     }
     else if(!validatePassword(password)) {
         throw new HttpError("Weak Password", 400);

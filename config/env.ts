@@ -11,5 +11,6 @@ export const ENV = cleanEnv(process.env, {
     JWT_FORGOT_SECRET: str({ desc: 'JWT secret key for forgot password' }),
     RESEND_API_KEY: str({ desc: 'The API key for the email sending service' }),
     EMAIL_SENDER: str({ default: "onboarding@resend.dev", desc: 'The email sender' }),
-    NODE_ENV: str({ desc: 'Project environment' })
+    NODE_ENV: str({ desc: 'Project environment' }),
+    CLIENT_DOMAIN: str({ desc: 'The client domain' }),
 });
