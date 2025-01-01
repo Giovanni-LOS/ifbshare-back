@@ -1,7 +1,7 @@
 import { NextFunction, Response } from "express";
 import { HttpError } from "../utils/httpError";
 
-export const errorMidddleware = (
+export const errorMiddleware = (
     err: any,
     req: Request,
     res: Response,
