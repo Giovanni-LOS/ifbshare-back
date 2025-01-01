@@ -21,6 +21,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 
         req.userId = decoded.id
 
+
         next()
     } catch (error) {
         if (error instanceof TokenExpiredError) {

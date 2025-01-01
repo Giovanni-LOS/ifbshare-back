@@ -118,7 +118,7 @@ export const getMe: RequestHandler = async (req, res) => {
     const user = await userModel.findOne({ _id: userId }).select("-password");
 
     if (user) { 
-        res.status(201).json({ success: true , data: user })
+        res.status(201).json({ success: true , message: "User successfully fetched.", data: user })
     }
     else {
         throw new HttpError("Invalid credentials", 400)

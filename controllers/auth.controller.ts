@@ -92,7 +92,7 @@ export const login: RequestHandler<{}, {}, loginBody> = async (req, res) => {
             httpOnly: true,
             sameSite: "strict",
             maxAge: 24 * 60 * 60 * 1000,
-            secure: true     
+            secure: true
         });
 
         res.status(201).json({ success: true , message: "You have successfully logged in."})
@@ -259,7 +259,7 @@ export const verifyEmail: RequestHandler<{}, {}, verifyEmailBody> = async (req, 
     );
 
     if(!updatedUser) {
-        throw new HttpError("Failed to verifi user", 500);
+        throw new HttpError("Failed to verify user", 500);
     }
 
     await verifyTokenModel.findByIdAndDelete(verifyToken._id);
