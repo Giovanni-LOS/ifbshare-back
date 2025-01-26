@@ -11,6 +11,8 @@ interface HeaderId {
 export const downloadFile: RequestHandler<HeaderId> = async (req, res) => {
     const { id } = req.params;
 
+    console.log(id);
+    
     const file = await fileModel.findById(id);
 
     if (!file) {
@@ -42,7 +44,7 @@ export const getFiles: RequestHandler<getFilesHeader> = async (req, res) => {
     res.status(200).json({ 
         success: true, 
         message: "Files fetched successfully", 
-        data: files.map(file => ({ 
+        data: files.map(file => ({
             _id: file._id,
             name: file.name, 
             size: file.size, 
