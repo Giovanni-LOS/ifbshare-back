@@ -1,6 +1,6 @@
 import express from "express";
 import { upload } from "../middlewares/multer.middleware.js";
-import {createPost, deletePost, getPosts, updatePost} from "../controllers/post.controller.js";
+import {createPost, deletePost, getPosts, getPostsById, updatePost} from "../controllers/post.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
@@ -26,6 +26,28 @@ router.use(authenticate);
  *         description: Unauthorized
  */
 router.get( "/", getPosts);
+/**
+ * @swagger
+ * /api/posts/{id}:
+ *   get:
+ *     summary: Get post by ID
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Post ID
+ *     responses:
+ *       200:
+ *         description: Post fetched successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Post not found
+ */
+router.get( "/:id", getPostsById);
 /**
  * @swagger
  * /api/posts:

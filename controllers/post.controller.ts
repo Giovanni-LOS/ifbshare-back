@@ -19,6 +19,22 @@ export const getPosts: RequestHandler = async (req, res) => {
     res.status(200).send({ success: true, data: posts, message: "Posts fetched successfully" });
 }
 
+export const getPostsById: RequestHandler<HeaderId> = async (req, res) => {
+    const { id } = req.params;
+
+    if(!mongoose.isValidObjectId(id)) {
+        throw new HttpError("Post Id not found", 404)
+    }
+
+    const post = await postModel.findById(id);
+
+    if (!post) {
+        throw new HttpError("Post not found", 404);
+    }
+
+    res.status(200).send({ success: true, data: post, message: "Post fetched successfully" });
+}
+
 interface CreatePostBody {
     title: string;
     content: string;
