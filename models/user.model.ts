@@ -29,6 +29,7 @@ const userSchema = new mongoose.Schema({
         type: Buffer,
     },
     degree: {
+        type: String,
         enum: Object.values(UserDegreeType)
     } as unknown as UserDegreeType
 }, {
