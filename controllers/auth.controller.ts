@@ -90,7 +90,7 @@ export const login: RequestHandler<{}, {}, loginBody> = async (req, res) => {
 
         res.cookie('authToken', token, {
             httpOnly: true,
-            sameSite: "strict",
+            sameSite: "none",
             maxAge: 24 * 60 * 60 * 1000,
             secure: true
         });
@@ -106,7 +106,7 @@ export const login: RequestHandler<{}, {}, loginBody> = async (req, res) => {
 export const logout: RequestHandler = async (_req, res) => {
     res.clearCookie('authToken', {
         httpOnly: true,
-        sameSite: "strict", 
+        sameSite: "none",
         secure: true   
     });
 
