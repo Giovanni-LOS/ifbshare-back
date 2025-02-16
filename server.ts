@@ -17,8 +17,15 @@ const PORT = ENV.PORT;
 const app = express();
 setupSwagger(app);
 
-app.use(cors({ origin: ENV.VITE_API_BASE_URL, credentials: true }));
+const allowedOrigins = [
+    "https://ifbshare-front.vercel.app", // Substitua pela URL real do seu frontend
+    "http://localhost:3000" // Para ambiente local
+];
 
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true, // Permite cookies e headers de autenticação
+}));
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: false }))
