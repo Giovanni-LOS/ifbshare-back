@@ -24,8 +24,11 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: allowedOrigins,
-    credentials: true, // Permite cookies e headers de autenticação
+    credentials: true, // Permite envio de cookies
+    allowedHeaders: ["Content-Type", "Authorization"], // Permite headers necessários
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Métodos permitidos
 }));
+
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: false }))
