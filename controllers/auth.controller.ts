@@ -91,7 +91,6 @@ export const login: RequestHandler<{}, {}, loginBody> = async (req, res) => {
         res.cookie('authToken', token, {
             httpOnly: true,
             sameSite: "none",
-            partitioned: true,
             maxAge: 24 * 60 * 60 * 1000,
             secure: true
         });
@@ -108,8 +107,7 @@ export const logout: RequestHandler = async (_req, res) => {
     res.clearCookie('authToken', {
         httpOnly: true,
         sameSite: "none",
-        partitioned: true,
-        secure: true   
+        secure: true
     });
 
     res.status(201).json({ success: true , message: "You have successfully logout." })
