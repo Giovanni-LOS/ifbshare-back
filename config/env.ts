@@ -13,4 +13,5 @@ export const ENV = cleanEnv(process.env, {
     EMAIL_SENDER: str({ default: "onboarding@resend.dev", desc: 'The email sender' }),
     NODE_ENV: str({ desc: 'Project environment' }),
     CLIENT_DOMAIN: str({ desc: 'The client domain' }),
+    VITE_API_BASE_URL: str({ desc: 'The API base URL' }),
 });

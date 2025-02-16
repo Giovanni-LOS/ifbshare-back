@@ -17,7 +17,7 @@ const PORT = ENV.PORT;
 const app = express();
 setupSwagger(app);
 
-app.use(cors());
+app.use(cors({ origin: ENV.VITE_API_BASE_URL, credentials: true }));
 
 app.use(express.json());
 
