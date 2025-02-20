@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 export enum UserDegreeType {
-    CS = "Computer Science",
-    PHYSICS = "Physics"
+  CS = 'Computação',
+  PHYSICS = 'Física'
 }
 
 const userSchema = new mongoose.Schema({

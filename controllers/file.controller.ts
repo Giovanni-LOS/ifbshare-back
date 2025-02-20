@@ -36,10 +36,6 @@ export const getFiles: RequestHandler<getFilesHeader> = async (req, res) => {
     }
     
     const files = await fileModel.find({ postId });
-    
-    if (!files.length) {
-        throw new HttpError("Files not found", 404);
-    }
 
     res.status(200).json({ 
         success: true, 
