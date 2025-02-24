@@ -24,10 +24,16 @@ export const register: RequestHandler<{}, {}, registerBody> = async (req, res) =
         throw new HttpError("Please add all fields", 400)
     }
     else if(!validateEmail(email)) {
-        throw new HttpError("Invalid email", 400);
+        throw new HttpError(
+          `Invalid email. Ensure it is properly formatted and ends with ` + ENV.IFB_DOMAIN,
+          400
+        );
     }
     else if(!validatePassword(password)) {
-        throw new HttpError("Weak Password", 400);
+        throw new HttpError(
+          "Password is not strong enough. It must be at least 8 characters long, contain at least one lowercase letter, one uppercase letter, one number, and one symbol.",
+          400
+        );
     }
     else if(await userModel.findOne({ email })) {
         throw new HttpError("Email already registered", 400)
@@ -68,7 +74,7 @@ export const register: RequestHandler<{}, {}, registerBody> = async (req, res) =
       })
     );
 
-    res.status(201).json({ success: true, message: "Your account has been successfully created! Please check your email to verify your account." })
+    res.status(201).json({ success: true, message: "Your account has been successfully created!" })
 }
 
 interface loginBody {
@@ -82,9 +88,11 @@ export const login: RequestHandler<{}, {}, loginBody> = async (req, res) => {
     const user = await userModel.findOne({ email })
 
     if (user && (await bcrypt.compare(password, user.password))) {
+        /*
         if (!user.verified) {
-            throw new HttpError("Verifie yout account", 400);
+            throw new HttpError("Verifie your account", 400);
         }
+        */
 
         const token = generateJWT(user._id); 
 
