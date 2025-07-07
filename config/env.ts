@@ -4,7 +4,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const ENV = cleanEnv(process.env, {
-    MONGO_URL: str({ desc: 'The MongoDB connection URL' }),
+    MYSQL_HOST: str({ desc: 'MySQL host' }),
+    MYSQL_USER: str({ desc: 'MySQL user' }),
+    MYSQL_PASSWORD: str({ desc: 'MySQL password' }),
+    MYSQL_DATABASE: str({ desc: 'MySQL database name' }),
     JWT_SECRET: str({ desc: 'JWT secret key' }),
     PORT: port({ default: 5555, desc: 'Server port' }),
     IFB_DOMAIN: str({ desc: 'The IFB domain email' }),
@@ -15,3 +18,6 @@ export const ENV = cleanEnv(process.env, {
     CLIENT_DOMAIN: str({ desc: 'The client domain' }),
     VITE_API_BASE_URL: str({ desc: 'The API base URL' }),
 });
+
+console.log('process.env.IFB_DOMAIN:', process.env.IFB_DOMAIN);
+console.log('ENV.IFB_DOMAIN:', ENV.IFB_DOMAIN);

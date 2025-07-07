@@ -11,8 +11,19 @@ import { ENV } from "./config/env.js";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import setupSwagger from './config/swagger.ts';
 import morgan from "morgan";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const PORT = ENV.PORT;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const uploadDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 const app = express();
 setupSwagger(app);
@@ -34,6 +45,8 @@ app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser());
 
 app.use(morgan("dev"));
+
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 app.use("/api/auth", authRouter);
 
