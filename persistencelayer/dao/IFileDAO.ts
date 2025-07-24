@@ -5,4 +5,6 @@ export interface IFileDAO {
     insertMany(files: FileDTO[]): Promise<FileDTO[]>;
     deleteMany(query: Record<string, unknown>): Promise<void>;
     findByPostId(postId: string): Promise<FileDTO[]>;
+    findById(id: string): Promise<FileDTO | null>;
+    delete(id: string): Promise<void>;
 }

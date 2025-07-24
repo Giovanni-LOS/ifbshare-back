@@ -60,7 +60,7 @@ export const getUserPostsById: RequestHandler<HeaderId, Record<string, unknown>,
         throw new HttpError("User not found", 404);
     }
 
-    const posts = await postDAO.findAllByUsuarioId(user.id);
+    const posts = await postDAO.findAllByUsuarioId(user.id || '');
 
     if (!posts) {
         throw new HttpError("Posts not found", 404);
@@ -78,7 +78,7 @@ export const getUserPostsByNickname: RequestHandler<HeaderNickname> = async (req
         throw new HttpError("User not found", 404);
     }
 
-    const posts = await postDAO.findAllByUsuarioId(user.id);
+    const posts = await postDAO.findAllByUsuarioId(user.id || '');
 
     if (!posts) {
         throw new HttpError("Posts not found", 404);
@@ -96,6 +96,11 @@ export const updateMe: RequestHandler<Record<string, unknown>, Record<string, un
     const { nickname, degree } = req.body
     const userId = req?.userId
     const file: Express.Multer.File = req.file as Express.Multer.File
+
+    if (!userId) {
+        throw new HttpError("User ID not found", 404);
+    }
+
     const user = await userDAO.findById(userId);
 
     if (!user) {
@@ -112,24 +117,30 @@ export const updateMe: RequestHandler<Record<string, unknown>, Record<string, un
     updateData.id = user.id;
     if (nickname) updateData.nickname = nickname;
     if (degree) updateData.degree = degree;
-    if (file) updateData.picture = file.buffer;
+    if (file) updateData.picture = file.buffer.toString('base64');
 
-    const updatedUser = await userDAO.update(updateData);
+    await userDAO.update(updateData);
 
-    res.status(201).json({ success: true, message: "User updated successfully!", data: updatedUser })
+    res.status(201).json({ success: true, message: "User updated successfully!" })
 }
 
 export const getMe: RequestHandler<Record<string, unknown>, Record<string, unknown>, Record<string, unknown>> = async (req, res) => {
     const userId = req?.userId
+
+    if (!userId) {
+        throw new HttpError("User ID not found", 404);
+    }
 
     const user = await userDAO.findById(userId);
 
     if (user) { 
         let picture = null;
         if (user.picture) {
-            const fileType = await fileTypeFromBuffer(user.picture);
+            // user.picture is now a base64 string from the DTO
+            const pictureBuffer = Buffer.from(user.picture, 'base64');
+            const fileType = await fileTypeFromBuffer(pictureBuffer);
             picture = {
-                data: user.picture.toString("base64"),
+                data: user.picture, // Already base64
                 type: fileType?.mime,
             };
         }

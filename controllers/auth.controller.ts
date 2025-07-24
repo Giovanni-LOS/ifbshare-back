@@ -50,12 +50,12 @@ export const register: RequestHandler<Record<string, unknown>, Record<string, un
     const salt = await bcrypt.genSalt()
     const hashedPassword = await bcrypt.hash(password, salt)
 
-    const userDTO = new UserDTO();
-    userDTO.nickname = nickname;
-    userDTO.email = email;
-    userDTO.password = hashedPassword;
-
-    const user = await userDAO.save(userDTO);
+    const user = await userDAO.saveWithPassword({
+        nickname,
+        email,
+        password: hashedPassword,
+        verified: false
+    });
 
     const verifyTokenDTO = new VerifyTokenDTO();
     verifyTokenDTO.email = email;
@@ -90,14 +90,19 @@ interface loginBody {
 export const login: RequestHandler<Record<string, unknown>, Record<string, unknown>, loginBody> = async (req, res) => {
     const { email, password } = req.body 
 
-    const user = await userDAO.findByEmail(email)
+    const userWithPassword = await userDAO.findByEmailWithPassword(email)
 
-    if (user && (await bcrypt.compare(password, user.password))) {
+    if (userWithPassword && (await bcrypt.compare(password, userWithPassword.password))) {
+        const user = userWithPassword.user;
         /*
         if (!user.verified) {
             throw new HttpError("Verifie your account", 400);
         }
         */
+
+        if (!user.id) {
+            throw new HttpError("User ID missing", 500);
+        }
 
         const token = generateJWT(user.id); 
 
@@ -135,13 +140,7 @@ export const deleteMe: RequestHandler = async (req, res) => {
         throw new HttpError("User not found", 404);
     }
 
-    const userDTO = new UserDTO();
-    userDTO.id = userId;
-    const deletedUser = await userDAO.delete(userDTO.id);
-
-    if(!deletedUser) {
-        throw new HttpError("User not found", 404);
-    }
+    await userDAO.delete(userId);
 
     res.status(200).send({ success: true, message: "User deleted successfully" });
 }
@@ -165,6 +164,9 @@ export const requestPassword: RequestHandler<Record<string, unknown>, Record<str
         const tokenToVerifies = await verifyTokenDAO.findOne({ email: user.email, verified: false });
 
         if(tokenToVerifies) {
+            if (!tokenToVerifies.id) {
+                throw new HttpError("Token ID missing", 500);
+            }
             await verifyTokenDAO.findByIdAndDelete(tokenToVerifies.id);
         }
 
@@ -236,13 +238,14 @@ export const resetPassword: RequestHandler<Record<string, unknown>, Record<strin
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    userDTO.id = user.id;
-    userDTO.password = hashedPassword;
+    if (!user.id) {
+        throw new HttpError("User ID missing", 500);
+    }
 
-    const updatedUser = await userDAO.update(userDTO);
+    await userDAO.updatePassword(user.id, hashedPassword);
 
-    if(!updatedUser) {
-        throw new HttpError("Failed to update user", 500);
+    if(!verifyToken.id) {
+        throw new HttpError("Token ID missing", 500);
     }
 
     await verifyTokenDAO.findByIdAndDelete(verifyToken.id);
@@ -282,10 +285,10 @@ export const verifyEmail: RequestHandler<Record<string, unknown>, Record<string,
     userDTO.id = user.id;
     userDTO.verified = true;
 
-    const updatedUser = await userDAO.update(userDTO);
+    await userDAO.update(userDTO);
 
-    if(!updatedUser) {
-        throw new HttpError("Failed to verify user", 500);
+    if(!verifyToken.id) {
+        throw new HttpError("Token ID missing", 500);
     }
 
     await verifyTokenDAO.findByIdAndDelete(verifyToken.id);

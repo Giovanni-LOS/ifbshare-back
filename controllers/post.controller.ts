@@ -72,10 +72,11 @@ export const createPost: RequestHandler<Record<string, unknown>, Record<string, 
     if (files) {
         const fileDTOs = files.map((file) => {
             const fileDTO = new FileDTO();
-            fileDTO.filename = file.originalname;
-            fileDTO.mimetype = file.mimetype;
-            fileDTO.size = file.size;
+            fileDTO.name = file.originalname;
+            fileDTO.contentType = file.mimetype;
+            fileDTO.size = file.size.toString(); // Convert number to string to match model
             fileDTO.postId = post.id;
+            fileDTO.data = file.buffer; // Assuming multer provides the buffer
             return fileDTO;
         });
         const fileUpload = await fileDAO.insertMany(fileDTOs);
@@ -140,9 +141,9 @@ export const updatePost: RequestHandler<HeaderId, Record<string, unknown>, Updat
     }
 
     const postDTO = new PostDTO();
-    postDTO.title = title;
-    postDTO.content = content || '';
-    postDTO.tags = tags || [];
+    if (title) postDTO.title = title;
+    if (content !== undefined) postDTO.content = content;
+    if (tags !== undefined) postDTO.tags = tags;
 
     const updatedPost = await postDAO.update(id, postDTO);
 

@@ -1,7 +1,9 @@
 export class PostDTO {
-    id!: string;
+    id?: string;
     title!: string;
-    content!: string;
-    author!: string;
-    tags!: string[];
+    content?: string;
+    author!: string; // ObjectId as string
+    tags?: string[];
+    createdAt?: Date;
+    updatedAt?: Date;
 }

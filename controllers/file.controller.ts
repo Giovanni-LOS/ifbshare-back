@@ -1,8 +1,11 @@
-import { Request, RequestHandler } from "express"
-import fileModel from "../models/file.model"
+import { RequestHandler } from "express"
 import { HttpError } from "../utils/httpError";
 import mongoose from "mongoose";
 import postModel from "../models/post.model";
+import FileDAO_Mongoose from "../persistencelayer/dao/FileDAO_Mongoose";
+import { FileDTO } from "../persistencelayer/persistence/FileDTO";
+
+const fileDAO = new FileDAO_Mongoose();
 
 interface HeaderId {
     id: string;
@@ -11,17 +14,31 @@ interface HeaderId {
 export const downloadFile: RequestHandler<HeaderId, Record<string, unknown>, Record<string, unknown>> = async (req, res) => {
     const { id } = req.params;
 
-    console.log(id);
-    
-    const file = await fileModel.findById(id);
+    const file = await fileDAO.findById(id);
 
     if (!file) {
         throw new HttpError("File not found", 404);
     }
 
-    res.setHeader("Content-Type", file.contentType);
+    if (!file.data) {
+        throw new HttpError("File data not found", 500);
+    }
+
+    // Ensure data is properly converted to Buffer
+    let fileData: Buffer;
+    if (file.data instanceof Buffer) {
+        fileData = file.data;
+    } else if (file.data && typeof file.data === 'object' && 'buffer' in file.data) {
+        // Handle MongoDB Binary type
+        fileData = Buffer.from((file.data as { buffer: ArrayBuffer }).buffer);
+    } else {
+        // Fallback for other data types
+        fileData = Buffer.from(file.data as unknown as Uint8Array);
+    }
+
+    res.setHeader("Content-Type", file.contentType || "application/octet-stream");
     res.setHeader("Content-Disposition", `attachment; filename="${file.name}"`);
-    res.status(200).send(file.data); 
+    res.status(200).end(fileData); 
 }
 
 interface getFilesHeader {
@@ -35,27 +52,26 @@ export const getFiles: RequestHandler<getFilesHeader, Record<string, unknown>, R
         throw new HttpError("Post postId is required", 400);
     }
     
-    const files = await fileModel.find({ postId });
+    const files = await fileDAO.findByPostId(postId);
 
     res.status(200).json({ 
         success: true, 
         message: "Files fetched successfully", 
         data: files.map(file => ({
-            _id: file._id,
+            id: file.id,
             name: file.name, 
             size: file.size, 
             contentType: file.contentType,
-            createAt: file.createdAt
+            createdAt: file.createdAt
         }))
     });
 }
 
-interface PostFileHeader extends Request {
-    postId?: string;
-    file?: Express.Multer.File;
+interface PostFileParams {
+    postId: string;
 }
 
-export const postFile: RequestHandler<Record<string, unknown>, Record<string, unknown>, Record<string, unknown>> = async (req: PostFileHeader, res) => {
+export const postFile: RequestHandler<PostFileParams, Record<string, unknown>, Record<string, unknown>> = async (req, res) => {
     const { postId } = req.params;
     const userId = req?.userId;
     const files: Express.Multer.File[] = req.files as Express.Multer.File[];
@@ -76,15 +92,17 @@ export const postFile: RequestHandler<Record<string, unknown>, Record<string, un
         throw new HttpError("Not authorized to add files to this post", 403);
     }
     
-    const fileDataPromises = files.map(async (file) => ({
-        name: file.originalname,
-        contentType: file.mimetype,
-        data: file.buffer,
-        size: file.size,
-        postId: post._id
-    }));
-    const fileData = await Promise.all(fileDataPromises);
-    const filesUpload = await fileModel.insertMany(fileData);
+    const fileDTOs = files.map((file) => {
+        const fileDTO = new FileDTO();
+        fileDTO.name = file.originalname;
+        fileDTO.contentType = file.mimetype;
+        fileDTO.data = file.buffer;
+        fileDTO.size = file.size.toString(); // Convert number to string to match model
+        fileDTO.postId = post._id.toString();
+        return fileDTO;
+    });
+    
+    const filesUpload = await fileDAO.insertMany(fileDTOs);
 
     if(!filesUpload) {
         throw new HttpError("Error submitting files", 500)
@@ -102,12 +120,12 @@ export const deleteFile: RequestHandler<deleteFileHeader, Record<string, unknown
     const { id, postId } = req.params;
     const userId = req?.userId;
 
-    const file = await fileModel.findById(id);
+    const file = await fileDAO.findById(id);
 
     if (!file) {
         throw new HttpError("File not found", 404);
     }
-    else if(file.postId.toString() !== postId) {
+    else if(file.postId !== postId) {
         throw new HttpError("File don't associate to this post", 400);
     }
     
@@ -120,11 +138,7 @@ export const deleteFile: RequestHandler<deleteFileHeader, Record<string, unknown
         throw new HttpError("Not authorized to delete files from this post", 403);
     }
 
-    await fileModel.findByIdAndDelete(id);
-
-    if(!file) {
-        throw new HttpError("File not deleted", 500);
-    }
+    await fileDAO.delete(id);
 
     res.status(200).json({ success: true, message: "File deleted successfully" });
 }

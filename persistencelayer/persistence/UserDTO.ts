@@ -1,8 +1,12 @@
+import { UserDegreeType } from "../../models/user.model";
+
 export class UserDTO {
-    id!: string;
+    id?: string;
     nickname!: string;
     email!: string;
-    password!: string;
-    degree!: string;
-    picture!: string;
+    verified?: boolean;
+    degree?: UserDegreeType;
+    picture?: string; // Base64 encoded string
+    createdAt?: Date;
+    updatedAt?: Date;
 }
