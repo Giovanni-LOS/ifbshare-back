@@ -3,9 +3,11 @@ import { HttpError } from "../utils/httpError";
 import mongoose from "mongoose";
 import PostDAO_Mongoose from "../persistencelayer/dao/PostDAO_Mongoose";
 import { PostDTO } from "../persistencelayer/persistence/PostDTO";
-import fileModel from "../models/file.model";
+import FileDAO_Mongoose from "../persistencelayer/dao/FileDAO_Mongoose";
+import { FileDTO } from "../persistencelayer/persistence/FileDTO";
 
 const postDAO = new PostDAO_Mongoose();
+const fileDAO = new FileDAO_Mongoose();
 
 interface HeaderId {
     id: string;
@@ -68,15 +70,15 @@ export const createPost: RequestHandler<Record<string, unknown>, Record<string, 
     }
 
     if (files) {
-        const fileDataPromises = files.map(async (file) => ({
-            name: file.originalname,
-            contentType: file.mimetype,
-            data: file.buffer,
-            size: file.size,
-            postId: post.id
-        }));
-        const fileData = await Promise.all(fileDataPromises);
-        const fileUpload = await fileModel.insertMany(fileData);
+        const fileDTOs = files.map((file) => {
+            const fileDTO = new FileDTO();
+            fileDTO.filename = file.originalname;
+            fileDTO.mimetype = file.mimetype;
+            fileDTO.size = file.size;
+            fileDTO.postId = post.id;
+            return fileDTO;
+        });
+        const fileUpload = await fileDAO.insertMany(fileDTOs);
 
         if(!fileUpload) {
             throw new HttpError("Error uploading files", 500)
@@ -101,7 +103,7 @@ export const deletePost: RequestHandler<HeaderId, Record<string, unknown>, Recor
         throw new HttpError("Not authorized to delete this post", 403);
     }
 
-    await fileModel.deleteMany({ postId: post.id });
+    await fileDAO.deleteMany({ postId: post.id });
     
     const postDeleted = await postDAO.delete(id);
 

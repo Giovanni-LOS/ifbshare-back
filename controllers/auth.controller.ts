@@ -3,7 +3,9 @@ import { HttpError } from "../utils/httpError";
 import bcrypt from "bcryptjs";
 import { generateJWT } from "../utils/generateToken";
 import { validateEmail, validatePassword } from "../utils/validators";
-import verifyTokenModel, { VerifyTokenType } from "../models/verifyToken.model";
+import { VerifyTokenType } from "../models/verifyToken.model";
+import VerifyTokenDAO_Mongoose from "../persistencelayer/dao/VerifyTokenDAO_Mongoose";
+import { VerifyTokenDTO } from "../persistencelayer/persistence/VerifyTokenDTO";
 import { sendEmail } from "../utils/sendEmail";
 import { renderEmail } from "../utils/renderEmail";
 import { ENV } from "../config/env";
@@ -11,6 +13,7 @@ import UserDAO_Mongoose from "../persistencelayer/dao/UserDAO_Mongoose";
 import { UserDTO } from "../persistencelayer/persistence/UserDTO";
 
 const userDAO = new UserDAO_Mongoose();
+const verifyTokenDAO = new VerifyTokenDAO_Mongoose();
 
 interface registerBody {
     name: string;
@@ -54,11 +57,12 @@ export const register: RequestHandler<Record<string, unknown>, Record<string, un
 
     const user = await userDAO.save(userDTO);
 
-    const newToken = await verifyTokenModel.create({
-        email,
-        expiresAt: new Date(Date.now() + (60 * 24 * 365) * 60 * 1000),
-        type: VerifyTokenType.EMAIL
-    });
+    const verifyTokenDTO = new VerifyTokenDTO();
+    verifyTokenDTO.email = email;
+    verifyTokenDTO.expiresAt = new Date(Date.now() + (60 * 24 * 365) * 60 * 1000);
+    verifyTokenDTO.type = VerifyTokenType.EMAIL;
+
+    const newToken = await verifyTokenDAO.save(verifyTokenDTO);
 
     if(!newToken) {
         throw new HttpError("Verification token not created", 500);
@@ -69,7 +73,7 @@ export const register: RequestHandler<Record<string, unknown>, Record<string, un
       "IFBShare: Confirm your account",
       await renderEmail("confirm-account-email", {
         link: `${ENV.CLIENT_DOMAIN}/verify-email?token=${
-          newToken._id
+          newToken.id
         }&expire=${newToken.expiresAt.getTime()}`,
         nickname: user.nickname,
       })
@@ -158,18 +162,19 @@ export const requestPassword: RequestHandler<Record<string, unknown>, Record<str
     const user = await userDAO.findByEmail(email);
 
     if(user) {
-        const tokenToVerifies = await verifyTokenModel.findOne({ email: user.email, verified: false });
+        const tokenToVerifies = await verifyTokenDAO.findOne({ email: user.email, verified: false });
 
         if(tokenToVerifies) {
-            await verifyTokenModel.findByIdAndDelete(tokenToVerifies._id);
+            await verifyTokenDAO.findByIdAndDelete(tokenToVerifies.id);
         }
 
-        const newToken = await verifyTokenModel.create({
-            email: user.email,
-            verified: false,
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-            type: VerifyTokenType.PASSWORD_RESET
-        });
+        const verifyTokenDTO = new VerifyTokenDTO();
+        verifyTokenDTO.email = user.email;
+        verifyTokenDTO.verified = false;
+        verifyTokenDTO.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        verifyTokenDTO.type = VerifyTokenType.PASSWORD_RESET;
+
+        const newToken = await verifyTokenDAO.save(verifyTokenDTO);
 
         if(!newToken) {
             throw new HttpError("Token not created", 500);
@@ -180,7 +185,7 @@ export const requestPassword: RequestHandler<Record<string, unknown>, Record<str
           "IFBShare: Reset your password",
           await renderEmail("reset-password-email", {
             link: `${ENV.CLIENT_DOMAIN}/reset-password?token=${
-              newToken._id
+              newToken.id
             }&expire=${newToken.expiresAt.getTime()}`,
             nickname: user.nickname,
           })
@@ -212,7 +217,7 @@ export const resetPassword: RequestHandler<Record<string, unknown>, Record<strin
         throw new HttpError("Weak Password", 400);
     }
 
-    const verifyToken = await verifyTokenModel.findById(token);
+    const verifyToken = await verifyTokenDAO.findById(token);
 
     if(!verifyToken) {
         throw new HttpError("Token expired, please request a new one!", 404);
@@ -240,7 +245,7 @@ export const resetPassword: RequestHandler<Record<string, unknown>, Record<strin
         throw new HttpError("Failed to update user", 500);
     }
 
-    await verifyTokenModel.findByIdAndDelete(verifyToken._id);
+    await verifyTokenDAO.findByIdAndDelete(verifyToken.id);
 
     res.status(200).json({ success: true, message: "User updated successfully" });
 }
@@ -257,7 +262,7 @@ export const verifyEmail: RequestHandler<Record<string, unknown>, Record<string,
         throw new HttpError("Token is necessary", 400);
     }
 
-    const verifyToken = await verifyTokenModel.findById(token);
+    const verifyToken = await verifyTokenDAO.findById(token);
 
     if(!verifyToken) {
         throw new HttpError("Token expired, please create a new account!", 404);
@@ -283,7 +288,7 @@ export const verifyEmail: RequestHandler<Record<string, unknown>, Record<string,
         throw new HttpError("Failed to verify user", 500);
     }
 
-    await verifyTokenModel.findByIdAndDelete(verifyToken._id);
+    await verifyTokenDAO.findByIdAndDelete(verifyToken.id);
 
     res.status(200).json({ success: true, message: "User verified successfully" });
 }
