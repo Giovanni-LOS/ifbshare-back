@@ -25,7 +25,7 @@ export const upload = multer({
     fileFilter: fileFilter,
 });
 
-const pictureFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback): void => {
+const pictureFilter = (_req: Request, file: Express.Multer.File, cb: FileFilterCallback): void => {
     // Reject a file if it's not a jpg, png
     if (
         file.mimetype === "image/jpeg" ||

@@ -9,7 +9,7 @@ interface DecodedToken extends JwtPayload {
     id: string;
 }
 
-export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
+export const authenticate = async (req: Request, _res: Response, next: NextFunction) => {
     const { authToken } = req.cookies
 
     if (!authToken) {

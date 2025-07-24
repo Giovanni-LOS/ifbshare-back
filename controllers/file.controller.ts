@@ -8,7 +8,7 @@ interface HeaderId {
     id: string;
 }
 
-export const downloadFile: RequestHandler<HeaderId> = async (req, res) => {
+export const downloadFile: RequestHandler<HeaderId, Record<string, unknown>, Record<string, unknown>> = async (req, res) => {
     const { id } = req.params;
 
     console.log(id);
@@ -28,7 +28,7 @@ interface getFilesHeader {
     postId: string;
 }
 
-export const getFiles: RequestHandler<getFilesHeader> = async (req, res) => {
+export const getFiles: RequestHandler<getFilesHeader, Record<string, unknown>, Record<string, unknown>> = async (req, res) => {
     const { postId } = req.params;
 
     if (!postId || !mongoose.isValidObjectId(postId)) {
@@ -55,7 +55,7 @@ interface PostFileHeader extends Request {
     file?: Express.Multer.File;
 }
 
-export const postFile: RequestHandler = async (req: PostFileHeader, res) => {
+export const postFile: RequestHandler<Record<string, unknown>, Record<string, unknown>, Record<string, unknown>> = async (req: PostFileHeader, res) => {
     const { postId } = req.params;
     const userId = req?.userId;
     const files: Express.Multer.File[] = req.files as Express.Multer.File[];
@@ -98,7 +98,7 @@ interface deleteFileHeader {
     id: string;
 }
 
-export const deleteFile: RequestHandler<deleteFileHeader> = async (req, res) => {
+export const deleteFile: RequestHandler<deleteFileHeader, Record<string, unknown>, Record<string, unknown>> = async (req, res) => {
     const { id, postId } = req.params;
     const userId = req?.userId;
 
@@ -120,9 +120,9 @@ export const deleteFile: RequestHandler<deleteFileHeader> = async (req, res) => 
         throw new HttpError("Not authorized to delete files from this post", 403);
     }
 
-    const deletedFile = await fileModel.findByIdAndDelete(id);
+    await fileModel.findByIdAndDelete(id);
 
-    if(!deleteFile) {
+    if(!file) {
         throw new HttpError("File not deleted", 500);
     }
 

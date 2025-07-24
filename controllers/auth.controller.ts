@@ -3,12 +3,14 @@ import { HttpError } from "../utils/httpError";
 import bcrypt from "bcryptjs";
 import { generateJWT } from "../utils/generateToken";
 import { validateEmail, validatePassword } from "../utils/validators";
-import userModel from "../models/user.model";
 import verifyTokenModel, { VerifyTokenType } from "../models/verifyToken.model";
 import { sendEmail } from "../utils/sendEmail";
 import { renderEmail } from "../utils/renderEmail";
 import { ENV } from "../config/env";
+import UserDAO_Mongoose from "../persistencelayer/dao/UserDAO_Mongoose";
+import { UserDTO } from "../persistencelayer/persistence/UserDTO";
 
+const userDAO = new UserDAO_Mongoose();
 
 interface registerBody {
     name: string;
@@ -17,7 +19,7 @@ interface registerBody {
     password: string;
 }
 
-export const register: RequestHandler<{}, {}, registerBody> = async (req, res) => {
+export const register: RequestHandler<Record<string, unknown>, Record<string, unknown>, registerBody> = async (req, res) => {
     const { email, password, nickname } = req.body
 
     if(!email || !password || !nickname) {
@@ -35,21 +37,22 @@ export const register: RequestHandler<{}, {}, registerBody> = async (req, res) =
           400
         );
     }
-    else if(await userModel.findOne({ email })) {
+    else if(await userDAO.findByEmail(email)) {
         throw new HttpError("Email already registered", 400)
     }
-    else if(await userModel.findOne({ nickname })) {
+    else if(await userDAO.findByNickname(nickname)) {
         throw new HttpError("Nickname already exists", 400)
     }
 
     const salt = await bcrypt.genSalt()
     const hashedPassword = await bcrypt.hash(password, salt)
 
-    const newUser = new userModel({
-        nickname,
-        email,
-        password: hashedPassword
-    })
+    const userDTO = new UserDTO();
+    userDTO.nickname = nickname;
+    userDTO.email = email;
+    userDTO.password = hashedPassword;
+
+    const user = await userDAO.save(userDTO);
 
     const newToken = await verifyTokenModel.create({
         email,
@@ -60,8 +63,6 @@ export const register: RequestHandler<{}, {}, registerBody> = async (req, res) =
     if(!newToken) {
         throw new HttpError("Verification token not created", 500);
     }
-
-    const user = await newUser.save();
 
     sendEmail(
       user.email,
@@ -82,10 +83,10 @@ interface loginBody {
     password: string;
 }
 
-export const login: RequestHandler<{}, {}, loginBody> = async (req, res) => {
+export const login: RequestHandler<Record<string, unknown>, Record<string, unknown>, loginBody> = async (req, res) => {
     const { email, password } = req.body 
 
-    const user = await userModel.findOne({ email })
+    const user = await userDAO.findByEmail(email)
 
     if (user && (await bcrypt.compare(password, user.password))) {
         /*
@@ -94,7 +95,7 @@ export const login: RequestHandler<{}, {}, loginBody> = async (req, res) => {
         }
         */
 
-        const token = generateJWT(user._id); 
+        const token = generateJWT(user.id); 
 
         res.cookie('authToken', token, {
             httpOnly: true,
@@ -126,7 +127,13 @@ export const logout: RequestHandler = async (_req, res) => {
 export const deleteMe: RequestHandler = async (req, res) => {
     const userId = req?.userId;
 
-    const deletedUser = await userModel.findByIdAndDelete(userId);
+    if (!userId) {
+        throw new HttpError("User not found", 404);
+    }
+
+    const userDTO = new UserDTO();
+    userDTO.id = userId;
+    const deletedUser = await userDAO.delete(userDTO.id);
 
     if(!deletedUser) {
         throw new HttpError("User not found", 404);
@@ -138,7 +145,7 @@ export const deleteMe: RequestHandler = async (req, res) => {
 interface RequestPasswordBody {
     email: string;
 }
-export const requestPassword: RequestHandler<{}, {}, RequestPasswordBody> = async (req, res) => {
+export const requestPassword: RequestHandler<Record<string, unknown>, Record<string, unknown>, RequestPasswordBody> = async (req, res) => {
     const { email } = req.body;
 
     if(!email) {
@@ -148,7 +155,7 @@ export const requestPassword: RequestHandler<{}, {}, RequestPasswordBody> = asyn
         throw new HttpError("Invalid email", 400);
     }
 
-    const user = await userModel.findOne({ email });
+    const user = await userDAO.findByEmail(email);
 
     if(user) {
         const tokenToVerifies = await verifyTokenModel.findOne({ email: user.email, verified: false });
@@ -189,7 +196,7 @@ interface ResetPasswordBody {
     confirmPassword: string;
 }
 
-export const resetPassword: RequestHandler<{}, {}, ResetPasswordBody> = async (req, res) => {
+export const resetPassword: RequestHandler<Record<string, unknown>, Record<string, unknown>, ResetPasswordBody> = async (req, res) => {
     const { token , password, confirmPassword } = req.body;
 
     if(!token) {
@@ -215,7 +222,7 @@ export const resetPassword: RequestHandler<{}, {}, ResetPasswordBody> = async (r
         throw new HttpError("Token not valid", 400);
     }
 
-    const user = await userModel.findOne({ email: verifyToken.email });
+    const user = await userDAO.findByEmail(verifyToken.email);
 
     if(!user) {
         throw new HttpError("User not found", 404);
@@ -224,10 +231,10 @@ export const resetPassword: RequestHandler<{}, {}, ResetPasswordBody> = async (r
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const updatedUser = await userModel.findByIdAndUpdate(
-        user._id, 
-        { password: hashedPassword }
-    );
+    userDTO.id = user.id;
+    userDTO.password = hashedPassword;
+
+    const updatedUser = await userDAO.update(userDTO);
 
     if(!updatedUser) {
         throw new HttpError("Failed to update user", 500);
@@ -243,7 +250,7 @@ interface verifyEmailBody {
     token: string;
 }
 
-export const verifyEmail: RequestHandler<{}, {}, verifyEmailBody> = async (req, res) => {
+export const verifyEmail: RequestHandler<Record<string, unknown>, Record<string, unknown>, verifyEmailBody> = async (req, res) => {
     const { token } = req.body;
 
     if(!token) {
@@ -260,16 +267,17 @@ export const verifyEmail: RequestHandler<{}, {}, verifyEmailBody> = async (req, 
         throw new HttpError("Token not valid", 400);
     }
 
-    const user = await userModel.findOne({ email: verifyToken.email });
+    const user = await userDAO.findByEmail(verifyToken.email);
 
     if(!user) {
         throw new HttpError("User not found", 404);
     }
 
-    const updatedUser = await userModel.findByIdAndUpdate(
-        user._id, 
-        { verified: true }
-    );
+    const userDTO = new UserDTO();
+    userDTO.id = user.id;
+    userDTO.verified = true;
+
+    const updatedUser = await userDAO.update(userDTO);
 
     if(!updatedUser) {
         throw new HttpError("Failed to verify user", 500);

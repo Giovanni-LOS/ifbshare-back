@@ -2,8 +2,8 @@ import { NextFunction, Response } from "express";
 import { HttpError } from "../utils/httpError";
 
 export const errorMiddleware = (
-    err: any,
-    req: Request,
+    err: unknown,
+    _req: Request,
     res: Response,
     next: NextFunction
 ): void => {

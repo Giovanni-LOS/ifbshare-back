@@ -1,16 +1,18 @@
 import { RequestHandler } from "express";
-import postModel from "../models/post.model";
-import fileModel from "../models/file.model"
 import { HttpError } from "../utils/httpError";
 import mongoose from "mongoose";
+import PostDAO_Mongoose from "../persistencelayer/dao/PostDAO_Mongoose";
+import { PostDTO } from "../persistencelayer/persistence/PostDTO";
+import fileModel from "../models/file.model";
 
+const postDAO = new PostDAO_Mongoose();
 
 interface HeaderId {
     id: string;
 }
 
-export const getPosts: RequestHandler = async (req, res) => {
-    const posts = await postModel.find();
+export const getPosts: RequestHandler<Record<string, unknown>, Record<string, unknown>, Record<string, unknown>> = async (_req, res) => {
+    const posts = await postDAO.findAll();
 
     if (!posts) {
         throw new HttpError("Posts not found", 404);
@@ -19,14 +21,14 @@ export const getPosts: RequestHandler = async (req, res) => {
     res.status(200).send({ success: true, data: posts, message: "Posts fetched successfully" });
 }
 
-export const getPostsById: RequestHandler<HeaderId> = async (req, res) => {
+export const getPostsById: RequestHandler<HeaderId, Record<string, unknown>, Record<string, unknown>> = async (req, res) => {
     const { id } = req.params;
 
     if(!mongoose.isValidObjectId(id)) {
         throw new HttpError("Post Id not found", 404)
     }
 
-    const post = await postModel.findById(id);
+    const post = await postDAO.findById(id);
 
     if (!post) {
         throw new HttpError("Post not found", 404);
@@ -41,7 +43,7 @@ interface CreatePostBody {
     tags: string[];
 }
 
-export const createPost: RequestHandler<{}, {}, CreatePostBody> = async (req, res) => {
+export const createPost: RequestHandler<Record<string, unknown>, Record<string, unknown>, CreatePostBody> = async (req, res) => {
     const { title, content, tags } = req.body;
     const author = req?.userId;
     const files: Express.Multer.File[] = req.files as Express.Multer.File[];
@@ -53,7 +55,13 @@ export const createPost: RequestHandler<{}, {}, CreatePostBody> = async (req, re
         throw new HttpError("Post must have a Title", 400)
     }
 
-    const post = await postModel.create({ title, content, tags, author });
+    const postDTO = new PostDTO();
+    postDTO.title = title;
+    postDTO.content = content || '';
+    postDTO.tags = tags || [];
+    postDTO.author = author;
+
+    const post = await postDAO.save(postDTO);
 
     if(!post) {
         throw new HttpError("Error creating post", 500)
@@ -65,7 +73,7 @@ export const createPost: RequestHandler<{}, {}, CreatePostBody> = async (req, re
             contentType: file.mimetype,
             data: file.buffer,
             size: file.size,
-            postId: post._id
+            postId: post.id
         }));
         const fileData = await Promise.all(fileDataPromises);
         const fileUpload = await fileModel.insertMany(fileData);
@@ -79,11 +87,11 @@ export const createPost: RequestHandler<{}, {}, CreatePostBody> = async (req, re
 }
 
 
-export const deletePost: RequestHandler<HeaderId> = async (req, res) => {
+export const deletePost: RequestHandler<HeaderId, Record<string, unknown>, Record<string, unknown>> = async (req, res) => {
     const { id } = req.params;
     const userId = req?.userId;
 
-    const post = await postModel.findById(id);
+    const post = await postDAO.findById(id);
 
     if (!post) {
        throw new HttpError("Post not found", 404);
@@ -93,20 +101,20 @@ export const deletePost: RequestHandler<HeaderId> = async (req, res) => {
         throw new HttpError("Not authorized to delete this post", 403);
     }
 
-    const filesDeleted = await fileModel.deleteMany({ postId: post._id });
+    await fileModel.deleteMany({ postId: post.id });
     
-    const postDeleted = await postModel.findByIdAndDelete(id);
+    const postDeleted = await postDAO.delete(id);
 
     res.status(200).send({ success: true, message: "Post deleted successfully", data: postDeleted });
 }
 
 interface UpdatePostBody {
-    title: string;
+    title?: string;
     content?: string;
     tags?: string[];
 }
 
-export const updatePost: RequestHandler<HeaderId, {}, UpdatePostBody> = async (req, res) => {
+export const updatePost: RequestHandler<HeaderId, Record<string, unknown>, UpdatePostBody> = async (req, res) => {
     const { id } = req.params;
     const { title, content, tags } = req.body;
     const author = req?.userId;
@@ -119,7 +127,7 @@ export const updatePost: RequestHandler<HeaderId, {}, UpdatePostBody> = async (r
         throw new HttpError("Post must have a Title", 400)
     }
 
-    const post = await postModel.findById(id);
+    const post = await postDAO.findById(id);
 
     if (!post) {
        throw new HttpError("Post not found", 404);
@@ -129,9 +137,14 @@ export const updatePost: RequestHandler<HeaderId, {}, UpdatePostBody> = async (r
         throw new HttpError("Not authorized to delete this post", 403);
     }
 
-    const updatedPost = await postModel.findByIdAndUpdate( id, { title, content, tags }, { new: true });
+    const postDTO = new PostDTO();
+    postDTO.title = title;
+    postDTO.content = content || '';
+    postDTO.tags = tags || [];
 
-    if(!updatePost) {
+    const updatedPost = await postDAO.update(id, postDTO);
+
+    if(!updatedPost) {
         throw new HttpError("Error updating post", 500)
     }
 

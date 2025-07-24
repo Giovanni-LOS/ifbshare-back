@@ -24,7 +24,7 @@ const specs = swaggerJsdoc(options);
 
 const setupSwagger = (app: Application): void => {
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
-    app.get('/api-docs/swagger.json', (req, res) => {
+    app.get('/api-docs/swagger.json', (_req, res) => {
         res.setHeader('Content-Type', 'application/json');
         res.send(specs);
     });

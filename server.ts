@@ -43,7 +43,7 @@ app.use("/api/files", fileRouter);
 
 app.use("/api/users", userRouter);
 
-// @ts-ignore
+// @ts-expect-error: Express error handling middleware
 app.use(errorMiddleware);
 
 app.listen(PORT, async () => {

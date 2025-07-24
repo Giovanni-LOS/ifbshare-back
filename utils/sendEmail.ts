@@ -12,7 +12,7 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
             html,
             from: ENV.EMAIL_SENDER
         });
-    } catch (error) {
+    } catch (error) { // eslint-disable-line @typescript-eslint/no-unused-vars
         throw new HttpError("Email not sent", 500);
     }
 }
