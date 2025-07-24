@@ -7,20 +7,7 @@ import UserDAO_Mongoose from "../persistencelayer/dao/UserDAO_Mongoose";
 import PostDAO_Mongoose from "../persistencelayer/dao/PostDAO_Mongoose";
 import { UserDTO } from "../persistencelayer/persistence/UserDTO";
 
-interface HeaderId {
-    userId: string;
-}
-
-interface HeaderNickname {
-    nickname: string;
-}
-
-interface UpdateMeBody {
-    nickname: string;
-    degree: UserDegreeType;
-}
-
-import { IUserController } from "./IUserController";
+import { IUserController, HeaderId, HeaderNickname, UpdateMeBody } from "./IUserController";
 
 class UserController implements IUserController {
     private userDAO: UserDAO_Mongoose;

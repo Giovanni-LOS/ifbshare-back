@@ -5,24 +5,7 @@ import postModel from "../models/post.model";
 import FileDAO_Mongoose from "../persistencelayer/dao/FileDAO_Mongoose";
 import { FileDTO } from "../persistencelayer/persistence/FileDTO";
 
-interface HeaderId {
-    id: string;
-}
-
-interface getFilesHeader {
-    postId: string;
-}
-
-interface PostFileParams {
-    postId: string;
-}
-
-interface deleteFileHeader {
-    postId: string;
-    id: string;
-}
-
-import { IFileController } from "./IFileController";
+import { IFileController, HeaderId, getFilesHeader, PostFileParams, deleteFileHeader } from "./IFileController";
 
 class FileController implements IFileController {
     private fileDAO: FileDAO_Mongoose;

@@ -1,24 +1,24 @@
 import { RequestHandler } from "express";
 
-interface FileHeaderId {
+export interface HeaderId {
     id: string;
 }
 
-interface getFilesHeader {
+export interface getFilesHeader {
     postId: string;
 }
 
-interface PostFileParams {
+export interface PostFileParams {
     postId: string;
 }
 
-interface deleteFileHeader {
+export interface deleteFileHeader {
     postId: string;
     id: string;
 }
 
 export interface IFileController {
-    downloadFile: RequestHandler<FileHeaderId, Record<string, unknown>, Record<string, unknown>>;
+    downloadFile: RequestHandler<HeaderId, Record<string, unknown>, Record<string, unknown>>;
     getFiles: RequestHandler<getFilesHeader, Record<string, unknown>, Record<string, unknown>>;
     postFile: RequestHandler<PostFileParams, Record<string, unknown>, Record<string, unknown>>;
     deleteFile: RequestHandler<deleteFileHeader, Record<string, unknown>, Record<string, unknown>>;

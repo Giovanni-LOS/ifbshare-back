@@ -6,23 +6,7 @@ import { PostDTO } from "../persistencelayer/persistence/PostDTO";
 import FileDAO_Mongoose from "../persistencelayer/dao/FileDAO_Mongoose";
 import { FileDTO } from "../persistencelayer/persistence/FileDTO";
 
-interface HeaderId {
-    id: string;
-}
-
-interface CreatePostBody {
-    title: string;
-    content: string;
-    tags: string[];
-}
-
-interface UpdatePostBody {
-    title?: string;
-    content?: string;
-    tags?: string[];
-}
-
-import { IPostController } from "./IPostController";
+import { IPostController, HeaderId, CreatePostBody, UpdatePostBody } from "./IPostController";
 
 class PostController implements IPostController {
     private postDAO: PostDAO_Mongoose;

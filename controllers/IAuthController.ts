@@ -1,28 +1,28 @@
 import { RequestHandler } from "express";
 
-interface registerBody {
+export interface registerBody {
     name: string;
     nickname: string;
     email: string;
     password: string;
 }
 
-interface loginBody {
+export interface loginBody {
     email: string;
     password: string;
 }
 
-interface RequestPasswordBody {
+export interface RequestPasswordBody {
     email: string;
 }
 
-interface ResetPasswordBody {
+export interface ResetPasswordBody {
     token: string;
     password: string;
     confirmPassword: string;
 }
 
-interface verifyEmailBody {
+export interface verifyEmailBody {
     token: string;
 }
 

@@ -1,16 +1,16 @@
 import { RequestHandler } from "express";
 
-interface HeaderId {
+export interface HeaderId {
     id: string;
 }
 
-interface CreatePostBody {
+export interface CreatePostBody {
     title: string;
     content: string;
     tags: string[];
 }
 
-interface UpdatePostBody {
+export interface UpdatePostBody {
     title?: string;
     content?: string;
     tags?: string[];

@@ -12,33 +12,14 @@ import { ENV } from "../config/env";
 import UserDAO_Mongoose from "../persistencelayer/dao/UserDAO_Mongoose";
 import { UserDTO } from "../persistencelayer/persistence/UserDTO";
 
-interface registerBody {
-    name: string;
-    nickname: string;
-    email: string;
-    password: string;
-}
-
-interface loginBody {
-    email: string;
-    password: string;
-}
-
-interface RequestPasswordBody {
-    email: string;
-}
-
-interface ResetPasswordBody {
-    token: string;
-    password: string;
-    confirmPassword: string;
-}
-
-interface verifyEmailBody {
-    token: string;
-}
-
-import { IAuthController } from "./IAuthController";
+import { 
+    IAuthController, 
+    registerBody, 
+    loginBody, 
+    RequestPasswordBody, 
+    ResetPasswordBody, 
+    verifyEmailBody 
+} from "./IAuthController";
 
 class AuthController implements IAuthController {
     private userDAO: UserDAO_Mongoose;
