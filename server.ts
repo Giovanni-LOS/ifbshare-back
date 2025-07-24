@@ -1,10 +1,10 @@
 import "express-async-errors";
 import express from "express";
 import { connectDB } from "./config/db"
-import postRouter from "./routes/post.route";
-import authRouter from "./routes/auth.route";
-import fileRouter from "./routes/file.route";
-import userRouter from "./routes/user.route";
+import PostRoutes from "./routes/PostRoutes";
+import AuthRoutes from "./routes/AuthRoutes";
+import FileRoutes from "./routes/FileRoutes";
+import UserRoutes from "./routes/UserRoutes";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { ENV } from "./config/env.js";
@@ -35,13 +35,13 @@ app.use(cookieParser());
 
 app.use(morgan("dev"));
 
-app.use("/api/auth", authRouter);
+app.use("/api/auth", AuthRoutes);
 
-app.use("/api/posts", postRouter);
+app.use("/api/posts", PostRoutes);
 
-app.use("/api/files", fileRouter);
+app.use("/api/files", FileRoutes);
 
-app.use("/api/users", userRouter);
+app.use("/api/users", UserRoutes);
 
 // @ts-expect-error: Express error handling middleware
 app.use(errorMiddleware);
